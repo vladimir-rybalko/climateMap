@@ -1,0 +1,136 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Климатическая карта</title>
+    <meta charset="utf-8" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="./css/leaflet.css" />
+    <link rel="stylesheet" href="./css/easy-button.css">
+    <style>
+        html,body,#map{
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        tr:nth-child(odd){
+            background:rgb(255,210,158);
+        }
+        table { 
+            width: 250px;
+            border-collapse: collapse;
+            border-spacing: 0;
+            text-align:center;
+        }
+        table td, .lux th {
+            padding: 4px;
+        }
+        td:first-child{
+            text-align:left;
+        }
+        .header{
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <script src="./js/leaflet.js"></script>
+    <script src="./js/easy-button.js"></script>
+    <script src="./js/jquery.min.js"></script>
+    <script>
+        var weathUrl = 'http://api.openweathermap.org/data/2.5/weather';
+        var weathKey = '108dadcb7fe2ef3c41bc5bc0cff033ec';
+
+        var map = L.map('map').setView([61.54529, 63.172503], 5);
+        L.tileLayer('http://tiles.maps.sputnik.ru/{z}/{x}/{y}.png', {
+            maxZoom: 18,
+            attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, ' +
+                '<a href="http://maps.sputnik.ru">Спутник</a>'
+        }).addTo(map);
+
+        var boundary = new L.geoJson();
+        boundary.addTo(map);
+
+        $.ajax({
+            dataType: "json",
+            url: "./data/regions.geojson",
+            success: function(data) {
+                $(data.features).each(function(key, data) {
+                    boundary.addData(data);
+                    boundary.setStyle({
+                        weight: 1,
+                        color: '#9D9C99',
+                        color: '#EF8A2A',
+                        fillOpacity: 0.7
+                    });
+                });
+            },
+            error: function(error){
+                console.log(error);
+            }
+        });
+        boundary.on('click',function(e){
+            $.ajax({
+                dataType: "json",
+                url: weathUrl,
+                data:{
+                    appid: weathKey,
+                    lat: e.latlng.lat,
+                    lon: e.latlng.lng,
+                    lang: 'ru',
+                    units: 'metric'
+                },
+                
+                success: function(data) {
+                    var html = '<span class="header"><strong>' + e.layer.feature.properties.NAME + '</strong></span><table><tr><td><strong>Температура</strong></td><td>' + data.main.temp + '</td></tr><tr><td><strong>Скорость ветра</strong></td><td>' + data.wind.speed + ' м/с</td></tr><tr><td><strong>Облачность</strong></td><td>' + data.clouds.all + ' %</td></tr><tr><td><strong>Влажность</strong></td><td>' + data.main.humidity + ' %</td></tr></table>';
+
+                    var popup = L.popup()
+                        .setLatLng(e.latlng)
+                        .setContent(html)
+                        .openOn(map);
+                }
+            })
+        })
+
+        var setColor = function(val){
+            return val > 25 ? '#FF7F29' :
+                    val > 15  ? '#FFDE69' :
+                    val > 10  ? '#FFF590' :
+                    val > 5  ? '#FFFDB1' :
+                    val > 0   ? '#FFFFD2' :
+                    val > -10   ? '#FFFFEE' :
+                    val > -20   ? '#85CFFF' :
+                    val > -30   ? '#4780FF' :
+                                '#FFEDA0';
+            };
+
+        L.easyButton('fa fa-thermometer-quarter fa-lg', function(btn, map){
+            boundary.eachLayer(function (f) {
+                $.ajax({
+                    dataType: "json",
+                    url: weathUrl,
+                    data:{
+                        appid: weathKey,
+                        lat: f.getCenter().lat,
+                        lon: f.getCenter().lng,
+                        lang: 'ru',
+                        units: 'metric'
+                    },
+                    success: function(data) {
+                        f.setStyle({
+                            weight: 1,
+                            color: '#9D9C99',
+                            color: setColor(data.main.temp),
+                            fillOpacity: 0.7
+                        });
+                    }
+                })
+
+            });
+        }).addTo(map);
+    </script>
+</body>
+</html>
