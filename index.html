@@ -1,10 +1,8 @@
-
 <!DOCTYPE html>
 <html>
 <head>
     <title>Климатическая карта</title>
     <meta charset="utf-8" />
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
     <link rel="stylesheet" href="./css/leaflet.css" />
@@ -41,9 +39,6 @@
     <script src="./js/easy-button.js"></script>
     <script src="./js/jquery.min.js"></script>
     <script>
-        var weathUrl = 'http://api.openweathermap.org/data/2.5/weather';
-        var weathKey = '108dadcb7fe2ef3c41bc5bc0cff033ec';
-
         var map = L.map('map').setView([61.54529, 63.172503], 5);
         L.tileLayer('http://tiles.maps.sputnik.ru/{z}/{x}/{y}.png', {
             maxZoom: 18,
@@ -62,9 +57,9 @@
                     boundary.addData(data);
                     boundary.setStyle({
                         weight: 1,
-                        color: '#9D9C99',
-                        color: '#EF8A2A',
-                        fillOpacity: 0.7
+						color: '#9D9C99',
+                        fillColor: setColor(data.properties.temp),
+                        fillOpacity: 0.4
                     });
                 });
             },
@@ -73,27 +68,13 @@
             }
         });
         boundary.on('click',function(e){
-            $.ajax({
-                dataType: "json",
-                url: weathUrl,
-                data:{
-                    appid: weathKey,
-                    lat: e.latlng.lat,
-                    lon: e.latlng.lng,
-                    lang: 'ru',
-                    units: 'metric'
-                },
-                
-                success: function(data) {
-                    var html = '<span class="header"><strong>' + e.layer.feature.properties.NAME + '</strong></span><table><tr><td><strong>Температура</strong></td><td>' + data.main.temp + '</td></tr><tr><td><strong>Скорость ветра</strong></td><td>' + data.wind.speed + ' м/с</td></tr><tr><td><strong>Облачность</strong></td><td>' + data.clouds.all + ' %</td></tr><tr><td><strong>Влажность</strong></td><td>' + data.main.humidity + ' %</td></tr></table>';
+            var html = '<span class="header"><strong>' + e.layer.feature.properties.NAME + '</strong></span><table><tr><td><strong>Температура</strong></td><td>' + e.layer.feature.properties.temp + '</td></tr><tr><td><strong>Скорость ветра</strong></td><td>' + e.layer.feature.properties.wind + ' м/с</td></tr><tr><td><strong>Облачность</strong></td><td>' + e.layer.feature.properties.clouds + ' %</td></tr><tr><td><strong>Влажность</strong></td><td>' + e.layer.feature.properties.humidity + ' %</td></tr></table>';
 
-                    var popup = L.popup()
-                        .setLatLng(e.latlng)
-                        .setContent(html)
-                        .openOn(map);
-                }
-            })
-        })
+			var popup = L.popup()
+				.setLatLng(e.latlng)
+				.setContent(html)
+				.openOn(map);
+        });
 
         var setColor = function(val){
             return val > 25 ? '#FF7F29' :
@@ -109,26 +90,12 @@
 
         L.easyButton('fa fa-thermometer-quarter fa-lg', function(btn, map){
             boundary.eachLayer(function (f) {
-                $.ajax({
-                    dataType: "json",
-                    url: weathUrl,
-                    data:{
-                        appid: weathKey,
-                        lat: f.getCenter().lat,
-                        lon: f.getCenter().lng,
-                        lang: 'ru',
-                        units: 'metric'
-                    },
-                    success: function(data) {
-                        f.setStyle({
-                            weight: 1,
-                            color: '#9D9C99',
-                            color: setColor(data.main.temp),
-                            fillOpacity: 0.7
-                        });
-                    }
-                })
-
+                f.setStyle({
+					weight: 1,
+					color: '#9D9C99',
+					fillColor: setColor(f.feature.properties.temp),
+					fillOpacity: 0.7
+				});
             });
         }).addTo(map);
     </script>
